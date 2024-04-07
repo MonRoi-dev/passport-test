@@ -19,14 +19,15 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Post('/user')
-  async createUser(
+  @Post('/register')
+  async register(
     @Req() req: Request,
     @Res() res: Response,
     @Body() data: Prisma.UserCreateInput,
   ): Promise<Response> {
-    const user = await this.appSerivse.createUser(data);
-    return res.status(200).send(user);
+    const token = await this.appSerivse.signUp(data);
+    res.cookie('token', req.user, { httpOnly: true, maxAge: 60000 });
+    return res.status(200).send(token);
   }
 
   @UseGuards(AuthGuard('jwt'))

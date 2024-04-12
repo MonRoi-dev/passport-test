@@ -1,47 +1,30 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { AppService } from './app.service';
-import { Request, Response } from 'express';
-import { Req } from '@nestjs/common';
-import { Res } from '@nestjs/common';
-import { Body } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { UsersService } from './users/users.service';
+import { User } from '@prisma/client';
 import { AuthGuard } from '@nestjs/passport';
+import { AuthService } from './auth/auth.service';
+import { Request } from 'express';
 
 @Controller()
 export class AppController {
   constructor(
-    private readonly appService: AppService,
-    private readonly appSerivse: AppService,
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService,
   ) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
-
-  @Post('/register')
-  async register(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() data: Prisma.UserCreateInput,
-  ): Promise<Response> {
-    const token = await this.appSerivse.signUp(data);
-    res.cookie('token', req.user, { httpOnly: true, maxAge: 60000 });
-    return res.status(200).send(token);
-  }
-
   @UseGuards(AuthGuard('jwt'))
-  @Get('/user')
-  async getUser(@Req() req: Request, @Res() res: Response): Promise<Response> {
-    const token = req.cookies.token;
-    const user = await this.appSerivse.verifyToken(token);
-    return res.status(200).send(user);
+  @Get('user')
+  async getUser(): Promise<User[]> {
+    return await this.usersService.findAll();
   }
 
-  @UseGuards(AuthGuard('local'))
-  @Post('/login')
-  async login(@Req() req: Request, @Res() res: Response) {
-    res.cookie('token', req.user, { httpOnly: true, maxAge: 60000 });
-    return res.status(200).send(req.user);
+  @UseGuards(AuthGuard('google'))
+  @Get('google')
+  async googleAuth() {}
+
+  @UseGuards(AuthGuard('google/redirect'))
+  @Get('google')
+  async googleAuthRedirect(@Req() req: Request) {
+    return await this.authService.googleLogin(req.user);
   }
 }
